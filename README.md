@@ -44,7 +44,7 @@ Link->Submit(Query("SELECT name, level FROM hero WHERE level >= $1", 10), Connec
 Link->Poll();
 ```
 
-A batch runs whole or not at all:
+A batch runs whole or not at all. Each of its queries holds a single statement:
 
 ```cpp
 Sequence<Query> Trade;

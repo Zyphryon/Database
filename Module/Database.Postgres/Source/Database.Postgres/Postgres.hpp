@@ -56,6 +56,9 @@ namespace ZyPlugin::Database
         /// \brief Longest time, in seconds, a lost link waits, which every failed attempt doubles the wait toward.
         static constexpr Real64 kLimit  = 30.0;
 
+        /// \brief Longest time, in seconds, a closing link waits for its answers before it refuses what is left.
+        static constexpr Real64 kDrain  = 10.0;
+
         /// \brief Number of bytes read off the socket at a time.
         static constexpr UInt32 kChunk  = 65536;
 

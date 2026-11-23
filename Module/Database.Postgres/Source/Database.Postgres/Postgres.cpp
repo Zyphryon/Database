@@ -52,8 +52,8 @@ namespace ZyPlugin::Database
         // The address reads `user:password@host:port/name?options`, split at the last `@` so a password may hold one.
         const Text Whole = mAddress;
         const SInt At    = StrFindLast(Whole, '@');
-        const Text Who   = (At != -1 ? Whole.Slice(0, static_cast<UInt>(At)) : Whole);
-        const Text Where = (At != -1 ? Whole.Slice(static_cast<UInt>(At) + 1) : Text::Empty());
+        const Text Who   = (At != -1 ? Whole.Slice(0, static_cast<UInt>(At)) : Text::Empty());
+        const Text Where = (At != -1 ? Whole.Slice(static_cast<UInt>(At) + 1) : Whole);
 
         Text Secret;
         Text Asked;
@@ -94,6 +94,10 @@ namespace ZyPlugin::Database
                 {
                     LOG_E("Database: The authority file '{0}' could not be read", Option.Slice(3));
                 }
+            }
+            else if (Option != "tls=on" && Option != "tls=verified" && !Option.IsEmpty())
+            {
+                LOG_E("Database: The option '{0}' is not known, so the link is opened without it", Option);
             }
         });
     }
@@ -145,8 +149,10 @@ namespace ZyPlugin::Database
 
         if (!Started || !Reach())
         {
-            Break("The server could not be reached for");
+            Break("The server could not be resolved or a link to it opened");
         }
+
+        Real64 Deadline = 0.0;
 
         while (true)
         {
@@ -168,6 +174,18 @@ namespace ZyPlugin::Database
 
             if (Stopping && mWaiting.IsEmpty() && mHead == mFlights.GetSize())
             {
+                break;
+            }
+
+            // A server that stops answering lets a closing link go after a while, refusing what it still holds.
+            if (Stopping && Deadline == 0.0)
+            {
+                Deadline = mClock.GetSeconds() + kDrain;
+            }
+            else if (Stopping && mClock.GetSeconds() >= Deadline)
+            {
+                Break("The link was closed before the server answered");
+                Dispatch();
                 break;
             }
 
@@ -300,6 +318,8 @@ namespace ZyPlugin::Database
         Put(mName, true);
         Put("client_encoding", true);
         Put("UTF8", true);
+        Put("bytea_output", true);
+        Put("hex", true);
         Put(Text::Empty(), true);
         Close();
         Flush();
@@ -951,7 +971,7 @@ namespace ZyPlugin::Database
 
         if (!Reach())
         {
-            Break("The server could not be reached for");
+            Break("The server could not be resolved or a link to it opened");
         }
     }
 

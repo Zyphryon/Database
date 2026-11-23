@@ -174,6 +174,13 @@ namespace ZyPlugin::Database
             return;
         }
 
+        // A text of several statements binds no values, so one given values is refused as PostgreSQL refuses it.
+        if (Outcome.IsOk() && !Request.GetArguments().IsEmpty())
+        {
+            Outcome.Fail("The statement has several statements, which take no values");
+            return;
+        }
+
         // A text not kept, as a schema of several statements is, runs each statement in turn.
         ConstPtr<Char>       Cursor = Statement.GetData();
         const ConstPtr<Char> Last   = Statement.GetData() + Statement.GetSize();
